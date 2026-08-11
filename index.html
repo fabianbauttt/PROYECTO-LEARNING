@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROYECTO LEARNING // Game Hub</title>
+<meta name="description" content="Hub de simuladores educativos y retos interactivos: Filosofía, Ciencias Sociales, Escape Rooms y Otros.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     TOKENS
+     ============================================================ */
+  :root{
+    --bg:            #0a0d0e;
+    --surface:       #12181a;
+    --surface-alt:   #161e20;
+    --border:        #223030;
+    --border-strong: #344341;
+    --text:          #e8e6dc;
+    --text-muted:    #9db0ac; /* lightened from #8fa19d — WCAG AA on dark surfaces */
+    --text-dim:      #7f8e8a; /* lightened from #55625f — was ~2.8:1, now ~5:1 on --surface */
+
+    --accent:        #ffb000;
+    --accent-dim:    rgba(255, 176, 0, .14);
+
+    --cat-filosofia: #a08cf5;
+    --cat-sociales:  #3fd6c0;
+    --cat-escape:    #ff5d6c;
+    --cat-otros:     #f5a623;
+
+    --state-complete: #35e07a;
+    --state-complete-dim: rgba(53, 224, 122, .14);
+
+    --glitch-a: #ff2b6d;
+    --glitch-b: #2bd9ff;
+
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono:    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+    --radius: 3px;
+  }
+
+  *, *::before, *::after{ box-sizing: border-box; }
+
+  html{ color-scheme: dark; }
+
+  body{
+    margin: 0;
+    background:
+      repeating-linear-gradient(0deg,   rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 42px),
+      repeating-linear-gradient(90deg,  rgba(255,255,255,.02)  0px, rgba(255,255,255,.02)  1px, transparent 1px, transparent 42px),
+      radial-gradient(ellipse at top, #0f1517 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: var(--font-mono);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a{ color: inherit; text-decoration: none; }
+
+  button{ font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  :focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* ============================================================
+     BLOCK: gamehub (page shell)
+     ============================================================ */
+  .gamehub{
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 56px) clamp(16px, 4vw, 40px) 80px;
+  }
+
+  .gamehub__header{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .gamehub__brand{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .gamehub__brand-mark{
+    font-size: 30px;
+    color: var(--accent);
+    text-shadow: 0 0 18px var(--accent-dim);
+    line-height: 1;
+  }
+
+  .gamehub__title{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(20px, 3.2vw, 32px);
+    letter-spacing: .04em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  /* --- glitch text effect: plays once on load, then only on hover --- */
+  .gamehub__title-text{
+    position: relative;
+    display: inline-block;
+  }
+
+  .gamehub__title-text::before,
+  .gamehub__title-text::after{
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .gamehub__title-text::before{ color: var(--glitch-a); }
+  .gamehub__title-text::after{ color: var(--glitch-b); }
+
+  /* boot glitch — JS adds .is-glitching once on load and removes it when it finishes */
+  .gamehub__title-text.is-glitching::before{ animation: glitch-burst-a .9s steps(1) 1; }
+  .gamehub__title-text.is-glitching::after{ animation: glitch-burst-b .9s steps(1) 1; }
+
+  /* after boot, the glitch only re-triggers while hovering the title, and loops as long as hovered */
+  .gamehub__title:hover .gamehub__title-text::before{ animation: glitch-burst-a .9s steps(1) infinite; }
+  .gamehub__title:hover .gamehub__title-text::after{ animation: glitch-burst-b .9s steps(1) infinite; }
+
+  @keyframes glitch-burst-a{
+    0%, 74%, 100% { opacity: 0;   transform: translate(0, 0);       clip-path: inset(0 0 100% 0); }
+    76%           { opacity: .8;  transform: translate(-3px, -1px); clip-path: inset(10% 0 60% 0); }
+    80%           { opacity: .7;  transform: translate(2px, 0);     clip-path: inset(48% 0 16% 0); }
+    84%           { opacity: .55; transform: translate(-1px, 1px);  clip-path: inset(68% 0 8% 0); }
+    88%, 100%     { opacity: 0; }
+  }
+
+  @keyframes glitch-burst-b{
+    0%, 75%, 100% { opacity: 0;   transform: translate(0, 0);      clip-path: inset(0 0 100% 0); }
+    77%           { opacity: .7;  transform: translate(2px, 1px);  clip-path: inset(20% 0 50% 0); }
+    81%           { opacity: .7;  transform: translate(-2px, 0);   clip-path: inset(55% 0 15% 0); }
+    85%           { opacity: .5;  transform: translate(1px, -1px); clip-path: inset(6% 0 74% 0); }
+    89%, 100%     { opacity: 0; }
+  }
+
+  .gamehub__cursor{
+    display: inline-block;
+    color: var(--accent);
+    animation: blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes blink{ 50%{ opacity: 0; } }
+
+  .gamehub__subtitle{
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    letter-spacing: .03em;
+    color: var(--text-muted);
+  }
+
+  .gamehub__credit{
+    margin: 6px 0 0;
+    font-size: 11px;
+    letter-spacing: .03em;
+    color: var(--text-dim);
+  }
+
+  .gamehub__status{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gamehub__status-dot{
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px 1px var(--accent);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse{
+    0%, 100%{ opacity: 1; transform: scale(1); }
+    50%{ opacity: .45; transform: scale(.75); }
+  }
+
+  /* ============================================================
+     BLOCK: gamehub__filters (nav)
+     ============================================================ */
+  .gamehub__filters{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 34px;
+  }
+
+  .gamehub__filter-btn{
+    padding: 9px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: color .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+
+  .gamehub__filter-btn::before{
+    content: "› ";
+    opacity: .5;
+  }
+
+  .gamehub__filter-btn:hover{
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+
+  .gamehub__filter-btn.is-active{
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 16px var(--accent-dim);
+  }
+
+  .gamehub__filter-btn.is-active::before{ opacity: 0; content: ""; }
+
+  /* ============================================================
+     BLOCK: gamehub__grid
+     ============================================================ */
+  .gamehub__grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 20px;
+  }
+
+  .gamehub__empty{
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    letter-spacing: .05em;
+    padding: 60px 0;
+    text-transform: uppercase;
+  }
+
+  /* ============================================================
+     BLOCK: gamehub-card
+     ============================================================ */
+  .gamehub-card{
+    --card-accent: var(--accent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 18px 20px;
+    overflow: hidden;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    /* opacity/transform during filtering are now driven by the Web Animations API (see JS);
+       this transition only covers hover/focus micro-interactions */
+    transition: border-color .25s ease, box-shadow .25s ease, transform .2s ease;
+  }
+
+  .gamehub-card::before{
+    /* corner classification bracket */
+    content: "";
+    position: absolute;
+    top: -1px; right: -1px;
+    width: 26px; height: 26px;
+    border-top: 2px solid var(--card-accent);
+    border-right: 2px solid var(--card-accent);
+    border-top-right-radius: var(--radius);
+    opacity: .85;
+  }
+
+  .gamehub-card:hover,
+  .gamehub-card:focus-visible{
+    border-color: var(--card-accent);
+    box-shadow: 0 0 0 1px var(--card-accent), 0 12px 30px -14px var(--card-accent);
+    transform: translateY(-3px);
+    cursor: pointer;
+  }
+
+  .gamehub-card__scan{
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--card-accent) 16%, transparent) 50%, transparent 100%);
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+
+  .gamehub-card:hover .gamehub-card__scan{
+    opacity: 1;
+    animation: scan 1.1s ease;
+  }
+
+  @keyframes scan{
+    from{ transform: translateY(-100%); }
+    to{ transform: translateY(100%); }
+  }
+
+  .gamehub-card--hidden{
+    /* opacity/transform for the hidden state are applied by the WAAPI animation itself;
+       this class only needs to disable interaction while a card is filtered out */
+    pointer-events: none;
+  }
+
+  .gamehub-card--filosofia{ --card-accent: var(--cat-filosofia); }
+  .gamehub-card--sociales { --card-accent: var(--cat-sociales); }
+  .gamehub-card--escape   { --card-accent: var(--cat-escape); }
+  .gamehub-card--otros    { --card-accent: var(--cat-otros); }
+
+  /* --- progress state: completed --- */
+  .gamehub-card--completed{
+    border-color: color-mix(in srgb, var(--state-complete) 45%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--state-complete) 30%, transparent), 0 0 22px -8px var(--state-complete);
+  }
+
+  .gamehub-card--completed:hover,
+  .gamehub-card--completed:focus-visible{
+    border-color: var(--state-complete);
+    box-shadow: 0 0 0 1px var(--state-complete), 0 16px 34px -14px var(--state-complete);
+  }
+
+  .gamehub-card__header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .gamehub-card__id{
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    color: var(--text-dim);
+  }
+
+  .gamehub-card__tag{
+    font-size: 10px;
+    letter-spacing: .1em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--card-accent);
+    border: 1px solid color-mix(in srgb, var(--card-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--card-accent) 12%, transparent);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  /* --- multimodal media container: 16:9 thumbnail, replaces the old emoji icon --- */
+  .gamehub-card__media{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    background-color: var(--surface-alt);
+    background-size: cover;
+    background-position: center;
+    border: 1px solid color-mix(in srgb, var(--card-accent) 30%, transparent);
+  }
+
+  .gamehub-card__media::after{
+    /* bottom vignette for legibility/cohesion with the dark theme */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(10,13,14,0) 55%, rgba(10,13,14,.55) 100%);
+    pointer-events: none;
+  }
+
+  .gamehub-card__badge{
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--state-complete);
+    color: #04150c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 10px 1px var(--state-complete-dim);
+  }
+
+  .gamehub-card__title{
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    margin: 0 0 8px;
+  }
+
+  .gamehub-card__desc{
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text-muted);
+    margin: 0 0 20px;
+    flex-grow: 1;
+  }
+
+  .gamehub-card__footer{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .gamehub-card__view{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--card-accent);
+    padding-bottom: 2px;
+    border-bottom: 1px solid color-mix(in srgb, var(--card-accent) 40%, transparent);
+  }
+
+  .gamehub-card__arrow{
+    transition: transform .2s ease;
+  }
+
+  .gamehub-card:hover .gamehub-card__arrow,
+  .gamehub-card:focus-visible .gamehub-card__arrow{
+    transform: translateX(4px);
+  }
+
+  /* ============================================================
+     BLOCK: dossier (detail modal)
+     ============================================================ */
+  .dossier{
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .25s ease, visibility 0s linear .25s;
+  }
+
+  .dossier.is-open{
+    visibility: visible;
+    opacity: 1;
+    transition: opacity .25s ease;
+  }
+
+  .dossier__backdrop{
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 6, 7, .8);
+    backdrop-filter: blur(3px);
+  }
+
+  .dossier__panel{
+    --card-accent: var(--accent);
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 30px 30px 26px;
+    transform: scale(.92) translateY(14px);
+    opacity: 0;
+    transition: transform .32s cubic-bezier(.2,.8,.3,1.05), opacity .28s ease;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+  }
+
+  .dossier.is-open .dossier__panel{
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+
+  .dossier__panel--filosofia{ --card-accent: var(--cat-filosofia); }
+  .dossier__panel--sociales { --card-accent: var(--cat-sociales); }
+  .dossier__panel--escape   { --card-accent: var(--cat-escape); }
+  .dossier__panel--otros    { --card-accent: var(--cat-otros); }
+
+  .dossier__close{
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+    color: var(--text-muted);
+    transition: color .2s ease, border-color .2s ease, transform .25s ease;
+  }
+
+  .dossier__close:hover{
+    color: var(--text);
+    border-color: var(--accent);
+    transform: rotate(90deg);
+  }
+
+  .dossier__eyebrow{
+    margin: 0 0 6px;
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .dossier__header{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 0 18px;
+    padding-right: 34px;
+  }
+
+  .dossier__id{
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--text-dim);
+  }
+
+  .dossier__tag{
+    font-size: 10px;
+    letter-spacing: .1em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--card-accent);
+    border: 1px solid color-mix(in srgb, var(--card-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--card-accent) 12%, transparent);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .dossier__status{
+    font-size: 10px;
+    letter-spacing: .1em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--state-complete);
+    border: 1px dashed color-mix(in srgb, var(--state-complete) 60%, transparent);
+    background: var(--state-complete-dim);
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .dossier__icon{
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    background: color-mix(in srgb, var(--card-accent) 10%, var(--surface-alt));
+    border: 1px solid color-mix(in srgb, var(--card-accent) 30%, transparent);
+    margin-bottom: 18px;
+  }
+
+  .dossier__title{
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    margin: 0 0 10px;
+  }
+
+  .dossier__desc{
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin: 0 0 22px;
+  }
+
+  .dossier__meta{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 0 0 20px;
+    padding: 14px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .dossier__meta-item dt{
+    font-size: 9.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .dossier__meta-item dd{
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: var(--font-display);
+  }
+
+  .dossier__warning{
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #ffd27a;
+    background: rgba(255, 176, 0, .08);
+    border-left: 2px solid var(--accent);
+    padding: 10px 12px;
+    border-radius: 2px;
+    margin: 0 0 22px;
+  }
+
+  .dossier__launch{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 18px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--card-accent);
+    border-radius: var(--radius);
+    box-shadow: 0 0 24px -8px var(--card-accent);
+    transition: transform .15s ease, box-shadow .2s ease;
+  }
+
+  .dossier__launch:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px -4px var(--card-accent);
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 560px){
+    .gamehub__header{ align-items: flex-start; }
+    .gamehub__status{ order: -1; }
+    .gamehub__grid{ grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 400px){
+    .dossier__meta{ grid-template-columns: 1fr; }
+    .dossier__panel{ padding: 26px 18px 20px; }
+  }
+
+  /* ============================================================
+     ACCESSIBILITY: reduced motion
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="gamehub">
+
+    <header class="gamehub__header">
+      <div class="gamehub__brand">
+        <span class="gamehub__brand-mark" aria-hidden="true">◈</span>
+        <div class="gamehub__brand-text">
+          <h1 class="gamehub__title"><span class="gamehub__title-text" data-text="PROYECTO LEARNING">PROYECTO LEARNING</span><span class="gamehub__cursor">_</span></h1>
+          <p class="gamehub__subtitle">// terminal de simulaciones — selecciona un expediente para iniciar</p>
+          <p class="gamehub__credit">Prof. Fabián Bautista G.</p>
+        </div>
+      </div>
+      <div class="gamehub__status">
+        <span class="gamehub__status-dot" aria-hidden="true"></span>
+        <span id="gamehub-count">10</span>&nbsp;expedientes visibles
+      </div>
+    </header>
+
+    <nav class="gamehub__filters" aria-label="Filtrar expedientes por categoría">
+      <button class="gamehub__filter-btn is-active" data-filter="todos" type="button">Todos</button>
+      <button class="gamehub__filter-btn" data-filter="filosofia" type="button">Filosofía</button>
+      <button class="gamehub__filter-btn" data-filter="sociales" type="button">Ciencias Sociales</button>
+      <button class="gamehub__filter-btn" data-filter="escape" type="button">Escape Rooms</button>
+      <button class="gamehub__filter-btn" data-filter="otros" type="button">Otros</button>
+    </nav>
+
+    <main class="gamehub__grid" id="gamehub-grid" aria-live="polite">
+      <!-- Las tarjetas se generan dinámicamente con JavaScript -->
+    </main>
+
+    <p class="gamehub__empty" id="gamehub-empty" hidden>No hay expedientes en esta categoría todavía.</p>
+
+  </div>
+
+  <!-- Dossier View: modal de detalle -->
+  <div class="dossier" id="dossier" aria-hidden="true">
+    <div class="dossier__backdrop" data-dossier-close></div>
+    <div class="dossier__panel" id="dossier-panel" role="dialog" aria-modal="true" aria-labelledby="dossier-title">
+      <button class="dossier__close" type="button" data-dossier-close aria-label="Cerrar expediente">✕</button>
+      <p class="dossier__eyebrow">Expediente clasificado</p>
+      <header class="dossier__header">
+        <span class="dossier__id" id="dossier-id"></span>
+        <span class="dossier__tag" id="dossier-tag"></span>
+        <span class="dossier__status" id="dossier-status" hidden>✓ Completado</span>
+      </header>
+      <div class="dossier__icon" id="dossier-icon"></div>
+      <h2 class="dossier__title" id="dossier-title"></h2>
+      <p class="dossier__desc" id="dossier-desc"></p>
+      <dl class="dossier__meta">
+        <div class="dossier__meta-item">
+          <dt>Duración estimada</dt>
+          <dd id="dossier-time"></dd>
+        </div>
+        <div class="dossier__meta-item">
+          <dt>Dificultad</dt>
+          <dd id="dossier-difficulty"></dd>
+        </div>
+      </dl>
+      <p class="dossier__warning"><span aria-hidden="true">⚠</span> <span id="dossier-warning-text"></span></p>
+      <a class="dossier__launch" id="dossier-launch" href="#" target="_blank" rel="noopener noreferrer">Iniciar simulación</a>
+    </div>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============================================================
+     1. DATOS DE PRODUCCIÓN — cada objeto alimenta una tarjeta
+     ============================================================ */
+  const GAMES = [
+    {
+      id: 'CS-001', title: 'Archivo Central de Memoria', description: 'Investiga las causas, actores e hitos del conflicto armado en Colombia conectando causas y consecuencias.', category: 'sociales', icon: '🕊️', url: 'https://fabianbauttt.github.io/conflicto-armado/', estimatedTime: '4 Fases', difficulty: 'Avanzada', warning: 'Contiene material histórico sensible sobre el conflicto colombiano.', isCompleted: false
+    },
+    {
+      id: 'CS-002', title: 'Agencia Geográfica: América', description: 'Modo campaña: Investiga capitales, demografía, gentilicios e idiomas del continente americano.', category: 'sociales', icon: '🌎', url: 'https://fabianbauttt.github.io/paises-america/', estimatedTime: '30 min', difficulty: 'Intermedia', warning: 'Requiere calibración precisa en el modo de demografía.', isCompleted: false
+    },
+    {
+      id: 'CS-003', title: 'Agencia Geográfica: Europa', description: 'Modo campaña: Investiga los datos y secretos de las naciones del continente europeo.', category: 'sociales', icon: '🌍', url: 'https://fabianbauttt.github.io/pa-ses-europa/', estimatedTime: '30 min', difficulty: 'Intermedia', warning: 'Incluye microestados que requieren gran precisión visual.', isCompleted: false
+    },
+    {
+      id: 'CS-004', title: 'Operación Teléfono Rojo', description: 'Investigación táctica sobre la Guerra Fría. El mundo te necesita para evitar el caos.', category: 'sociales', icon: '📡', url: 'https://fabianbauttt.github.io/escape-guerra-fria/', estimatedTime: '45 min', difficulty: 'Avanzada', warning: 'El tiempo es crítico para evitar la escalada nuclear.', isCompleted: false
+    },
+    {
+      id: 'FIL-001', title: 'Arkhé: En busca del origen', description: 'Reconstruye el Templo de la Razón descifrando el enigma de los filósofos presocráticos.', category: 'filosofia', icon: '🏛️', url: 'https://fabianbauttt.github.io/del-mito-al-logos/', estimatedTime: '30 min', difficulty: 'Intermedia', warning: 'Requiere pensamiento abstracto y asociación lógica.', isCompleted: false
+    },
+    {
+      id: 'FIL-002', title: 'Laboratorio Bioético', description: 'Enfréntate a dilemas morales contemporáneos y toma decisiones fundamentales.', category: 'filosofia', icon: '🧬', url: 'https://fabianbauttt.github.io/LaboratorioBioetico/', estimatedTime: '25 min', difficulty: 'Intermedia', warning: 'Las decisiones tomadas alterarán el curso de la simulación.', isCompleted: false
+    },
+    {
+      id: 'ESC-001', title: 'El Genio Maligno', description: 'Aplica la duda metódica de Descartes para escapar antes de que tus propios sentidos te engañen.', category: 'escape', icon: '👁️', url: 'https://fabianbauttt.github.io/escape-descartes/', estimatedTime: '40 min', difficulty: 'Alta', warning: 'Desconfía de la información visual evidente.', isCompleted: false
+    },
+    {
+      id: 'ESC-002', title: 'Protocolo Teseo (Identidad)', description: 'NIVEL_01.INTERROGATORIO: Define las propiedades esenciales y accidentales del Agente K.', category: 'escape', icon: '🤖', url: 'https://fabianbauttt.github.io/escape-identidad/', estimatedTime: '45 min', difficulty: 'Alta', warning: 'Clasificar incorrectamente bloqueará el escáner neuronal.', isCompleted: false
+    },
+    {
+      id: 'OTR-001', title: 'Laboratorio de Creadores Digitales', description: 'Narrativas audiovisuales y redes sociales. Fase 1: Entrena tu ojo fotográfico.', category: 'otros', icon: '📸', url: 'https://fabianbauttt.github.io/fabianbauttt.github.io/', estimatedTime: 'Varias sesiones', difficulty: 'Práctica', warning: 'Requiere uso de cámara y edición en dispositivo móvil.', isCompleted: false
+    },
+    {
+      id: 'OTR-002', title: 'Misión Matemática: Tablas', description: 'Entrenamiento táctico numérico. Supera los obstáculos dominando las tablas del 1 al 5.', category: 'otros', icon: '🔢', url: 'https://fabianbauttt.github.io/tablasdel1al5/', estimatedTime: '15 min', difficulty: 'Básica', warning: 'La velocidad de respuesta es fundamental para avanzar.', isCompleted: false
+    }
+  ];
+
+  const CATEGORY_META = {
+    filosofia: { label: 'Filosofía',        cardModifier: 'gamehub-card--filosofia', panelModifier: 'dossier__panel--filosofia' },
+    sociales:  { label: 'Ciencias Sociales', cardModifier: 'gamehub-card--sociales',  panelModifier: 'dossier__panel--sociales'  },
+    escape:    { label: 'Escape Rooms',      cardModifier: 'gamehub-card--escape',    panelModifier: 'dossier__panel--escape'    },
+    otros:     { label: 'Otros',             cardModifier: 'gamehub-card--otros',     panelModifier: 'dossier__panel--otros'     }
+  };
+
+  // Colores literales por categoría (los thumbnails SVG no pueden leer variables CSS del documento padre)
+  const CATEGORY_ACCENT_HEX = {
+    filosofia: '#a08cf5',
+    sociales:  '#3fd6c0',
+    escape:    '#ff5d6c',
+    otros:     '#f5a623'
+  };
+
+  /* ============================================================
+     2. THUMBNAILS — miniatura 16:9 generada como SVG (data URI),
+        sin dependencias externas. Sustituir por una imagen real
+        asignando una URL a game.thumbnail y usándola aquí.
+     ============================================================ */
+  function buildThumbnail(category, icon){
+    const accent = CATEGORY_ACCENT_HEX[category] || '#ffb000';
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="338" viewBox="0 0 600 338">' +
+        '<defs><pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">' +
+          '<path d="M26 0H0V26" fill="none" stroke="' + accent + '" stroke-width="0.6" opacity="0.22"/>' +
+        '</pattern></defs>' +
+        '<rect width="600" height="338" fill="#0d1416"/>' +
+        '<rect width="600" height="338" fill="url(#grid)"/>' +
+        '<rect width="600" height="338" fill="' + accent + '" opacity="0.07"/>' +
+        '<circle cx="300" cy="164" r="78" fill="none" stroke="' + accent + '" stroke-width="1.4" opacity="0.55"/>' +
+        '<circle cx="300" cy="164" r="98" fill="none" stroke="' + accent + '" stroke-width="1" opacity="0.25"/>' +
+        '<text x="300" y="164" font-size="92" text-anchor="middle" dominant-baseline="central">' + icon + '</text>' +
+      '</svg>';
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  /* ============================================================
+     3. RENDERIZADO — construye el DOM a partir de GAMES
+     ============================================================ */
+  const grid = document.getElementById('gamehub-grid');
+  const emptyMsg = document.getElementById('gamehub-empty');
+  const countEl = document.getElementById('gamehub-count');
+
+  function renderCard(game){
+    const meta = CATEGORY_META[game.category];
+
+    const card = document.createElement('article');
+    card.className = 'gamehub-card ' + meta.cardModifier + (game.isCompleted ? ' gamehub-card--completed' : '');
+    card.dataset.category = game.category;
+    card.dataset.id = game.id;
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-haspopup', 'dialog');
+    card.setAttribute('aria-label', 'Ver expediente: ' + game.title);
+
+    card.innerHTML = `
+      <div class="gamehub-card__scan" aria-hidden="true"></div>
+      <header class="gamehub-card__header">
+        <span class="gamehub-card__id">${game.id}</span>
+        <span class="gamehub-card__tag">${meta.label}</span>
+      </header>
+      <div class="gamehub-card__media" role="img" aria-label="Miniatura de ${game.title}" style="background-image:url('${buildThumbnail(game.category, game.icon)}')">
+        ${game.isCompleted ? '<span class="gamehub-card__badge" title="Completado">✓</span>' : ''}
+      </div>
+      <h2 class="gamehub-card__title">${game.title}</h2>
+      <p class="gamehub-card__desc">${game.description}</p>
+      <div class="gamehub-card__footer">
+        <span class="gamehub-card__view">Ver expediente <span class="gamehub-card__arrow" aria-hidden="true">→</span></span>
+      </div>
+    `;
+
+    return card;
+  }
+
+  function renderGrid(games){
+    grid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    games.forEach(game => fragment.appendChild(renderCard(game)));
+    grid.appendChild(fragment);
+    countEl.textContent = games.length;
+  }
+
+  /* ============================================================
+     4. FILTRADO — Web Animations API con cancelación de animaciones
+        en curso, para que los clics rápidos entre categorías nunca
+        dejen la grilla en un estado inconsistente.
+     ============================================================ */
+  const filterButtons = document.querySelectorAll('.gamehub__filter-btn');
+  const FILTER_DURATION = 380;
+  const STAGGER_MS = 40;
+  const STAGGER_MAX_MS = 240;
+
+  const SHOW_KEYFRAMES = [
+    { opacity: 0, transform: 'translateY(16px) scale(0.95)' },
+    { opacity: 1, transform: 'translateY(0) scale(1)' }
+  ];
+  const HIDE_KEYFRAMES = [
+    { opacity: 1, transform: 'translateY(0) scale(1)' },
+    { opacity: 0, transform: 'translateY(16px) scale(0.95)' }
+  ];
+
+  function applyFilter(category){
+    const cards = grid.querySelectorAll('.gamehub-card');
+    let visibleCount = 0;
+    let staggerIndex = 0;
+
+    cards.forEach(card => {
+      // Si esta tarjeta ya tenía una animación en curso (p. ej. por un clic anterior
+      // muy reciente), se cancela antes de iniciar la nueva: así nunca se ejecuta un
+      // "onfinish" obsoleto que oculte o descoloque una tarjeta que ya cambió de estado.
+      if (card._filterAnimation){
+        card._filterAnimation.cancel();
+        card._filterAnimation = null;
+      }
+
+      const matches = category === 'todos' || card.dataset.category === category;
+
+      if (matches){
+        visibleCount++;
+        staggerIndex++;
+        const delay = Math.min(staggerIndex * STAGGER_MS, STAGGER_MAX_MS);
+
+        card.classList.remove('gamehub-card--hidden');
+        card.style.display = '';
+
+        const anim = card.animate(SHOW_KEYFRAMES, {
+          duration: FILTER_DURATION,
+          delay: delay,
+          easing: 'cubic-bezier(.22,.8,.32,1)',
+          fill: 'both'
+        });
+
+        anim.onfinish = () => {
+          card._filterAnimation = null;
+          anim.cancel(); // libera el efecto retenido; la regla base de CSS ya coincide visualmente
+        };
+
+        card._filterAnimation = anim;
+      } else {
+        const anim = card.animate(HIDE_KEYFRAMES, {
+          duration: FILTER_DURATION,
+          easing: 'ease',
+          fill: 'both'
+        });
+
+        anim.onfinish = () => {
+          card.classList.add('gamehub-card--hidden');
+          card.style.display = 'none';
+          card._filterAnimation = null;
+          anim.cancel();
+        };
+
+        card._filterAnimation = anim;
+      }
+    });
+
+    countEl.textContent = visibleCount;
+    emptyMsg.hidden = visibleCount !== 0;
+  }
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      applyFilter(btn.dataset.filter);
+    });
+  });
+
+  /* ============================================================
+     5. DOSSIER VIEW — modal de detalle
+     ============================================================ */
+  const dossier = document.getElementById('dossier');
+  const dossierPanel = document.getElementById('dossier-panel');
+  const dossierId = document.getElementById('dossier-id');
+  const dossierTag = document.getElementById('dossier-tag');
+  const dossierStatus = document.getElementById('dossier-status');
+  const dossierIcon = document.getElementById('dossier-icon');
+  const dossierTitle = document.getElementById('dossier-title');
+  const dossierDesc = document.getElementById('dossier-desc');
+  const dossierTime = document.getElementById('dossier-time');
+  const dossierDifficulty = document.getElementById('dossier-difficulty');
+  const dossierWarningText = document.getElementById('dossier-warning-text');
+  const dossierLaunch = document.getElementById('dossier-launch');
+
+  let lastFocusedEl = null;
+
+  // Selector amplio de elementos enfocables: incluye input/textarea/select y se
+  // reconsulta en cada pulsación de Tab, así que soporta contenido dinámico dentro del modal.
+  const FOCUSABLE_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+    '[contenteditable="true"]'
+  ].join(',');
+
+  function getFocusableElements(container){
+    if (!container) return [];
+    return Array.prototype.filter.call(
+      container.querySelectorAll(FOCUSABLE_SELECTOR),
+      el => el.offsetParent !== null || el === document.activeElement
+    );
+  }
+
+  function openDossier(game, triggerEl){
+    const meta = CATEGORY_META[game.category];
+
+    dossierPanel.className = 'dossier__panel ' + meta.panelModifier;
+    dossierId.textContent = game.id;
+    dossierTag.textContent = meta.label;
+    dossierStatus.hidden = !game.isCompleted;
+    dossierIcon.textContent = game.icon;
+    dossierTitle.textContent = game.title;
+    dossierDesc.textContent = game.description;
+    dossierTime.textContent = game.estimatedTime;
+    dossierDifficulty.textContent = game.difficulty;
+    dossierWarningText.textContent = game.warning;
+    dossierLaunch.href = game.url;
+    dossierLaunch.textContent = game.isCompleted ? 'Relanzar simulación' : 'Iniciar simulación';
+
+    lastFocusedEl = triggerEl || document.activeElement;
+
+    dossier.classList.add('is-open');
+    dossier.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onDossierKeydown);
+
+    window.setTimeout(() => {
+      const focusable = getFocusableElements(dossierPanel);
+      (focusable[0] || dossierPanel).focus();
+    }, 50);
+  }
+
+  function closeDossier(){
+    dossier.classList.remove('is-open');
+    dossier.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onDossierKeydown);
+    if (lastFocusedEl) lastFocusedEl.focus();
+  }
+
+  function onDossierKeydown(e){
+    if (e.key === 'Escape'){
+      closeDossier();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const focusable = getFocusableElements(dossierPanel);
+
+    if (!focusable.length){
+      // el panel no tiene nada enfocable en este momento: no dejar que el foco se escape
+      e.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const activeIndex = focusable.indexOf(document.activeElement);
+
+    if (e.shiftKey){
+      if (activeIndex <= 0){
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (activeIndex === -1 || activeIndex === focusable.length - 1){
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  dossier.querySelectorAll('[data-dossier-close]').forEach(el => {
+    el.addEventListener('click', closeDossier);
+  });
+
+  function findGameById(id){
+    return GAMES.find(g => g.id === id);
+  }
+
+  grid.addEventListener('click', (e) => {
+    const card = e.target.closest('.gamehub-card');
+    if (!card) return;
+    const game = findGameById(card.dataset.id);
+    if (game) openDossier(game, card);
+  });
+
+  grid.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target.closest('.gamehub-card');
+    if (!card) return;
+    e.preventDefault();
+    const game = findGameById(card.dataset.id);
+    if (game) openDossier(game, card);
+  });
+
+  /* ============================================================
+     6. BOOT GLITCH — se dispara una vez al cargar la página;
+        después solo se repite mientras el título está en :hover (CSS)
+     ============================================================ */
+  function triggerBootGlitch(){
+    const titleText = document.querySelector('.gamehub__title-text');
+    if (!titleText) return;
+
+    titleText.classList.add('is-glitching');
+
+    let pending = 2; // ::before y ::after disparan cada uno su propio animationend
+    function onEnd(){
+      pending -= 1;
+      if (pending <= 0){
+        titleText.classList.remove('is-glitching');
+        titleText.removeEventListener('animationend', onEnd);
+      }
+    }
+    titleText.addEventListener('animationend', onEnd);
+  }
+
+  /* ============================================================
+     7. INIT
+     ============================================================ */
+  renderGrid(GAMES);
+  triggerBootGlitch();
+})();
+</script>
+
+</body>
+</html>
