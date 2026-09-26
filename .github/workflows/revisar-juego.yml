@@ -1,0 +1,44 @@
+# Revisión automática común a todos los juegos de PROYECTO LEARNING.
+# Cada juego la llama desde su propio .github/workflows/revision.yml.
+# Revisa errores de JavaScript, archivos que faltan, enlaces internos
+# rotos, contenido que se sale de la pantalla y el Panel docente.
+name: Revisar juego
+
+on:
+  workflow_call:
+    inputs:
+      version-herramienta:
+        description: Versión (rama o commit) de PROYECTO-LEARNING de la que se toma la herramienta de revisión.
+        type: string
+        default: main
+
+jobs:
+  revisar:
+    name: Revisión automática
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Descargar el juego
+        uses: actions/checkout@v5
+
+      - name: Descargar la herramienta de revisión
+        uses: actions/checkout@v5
+        with:
+          repository: fabianbauttt/PROYECTO-LEARNING
+          ref: ${{ inputs.version-herramienta }}
+          path: _revision
+          sparse-checkout: herramientas/revision
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Instalar el navegador de pruebas
+        working-directory: _revision/herramientas/revision
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Revisar las páginas
+        run: node _revision/herramientas/revision/revisar.mjs "$GITHUB_WORKSPACE"
