@@ -317,9 +317,18 @@
 
   // Con data-solo-en, el botón se oculta cuando la pantalla de inicio
   // deja de verse (el panel abierto no se cierra).
+  // Cuenta como oculta si no ocupa espacio, o si ella o un contenedor
+  // tiene visibility:hidden u opacity 0 (pantallas que se desvanecen).
+  function isShown(el){
+    if(!el || !el.getClientRects().length) return false;
+    for(var n = el; n && n.nodeType === 1; n = n.parentElement){
+      var cs = getComputedStyle(n);
+      if(cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) return false;
+    }
+    return true;
+  }
   function syncVisibility(){
-    var el = document.querySelector(SOLO_EN);
-    openBtn.hidden = !(el && el.getClientRects().length);
+    openBtn.hidden = !isShown(document.querySelector(SOLO_EN));
   }
 
   function mount(){
@@ -328,6 +337,10 @@
       syncVisibility();
       new MutationObserver(syncVisibility).observe(document.body,
         { attributes:true, attributeFilter:["class","style","hidden"], subtree:true });
+      // Las animaciones de entrada y salida cambian la opacidad sin tocar
+      // atributos: se vuelve a comprobar cuando terminan.
+      document.addEventListener("animationend", syncVisibility, true);
+      document.addEventListener("transitionend", syncVisibility, true);
     }
   }
   if(document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
