@@ -22,6 +22,10 @@
    que dibujan cada pantalla de nuevo. Agregando #docente al final de
    la dirección del juego, el botón se ve en cualquier pantalla.
 
+   Para poner el botón dentro de la página (por ejemplo, junto a otro
+   botón para profes) en vez de flotando en una esquina:
+     <script src="panel-docente.js" data-junto-a="#boton-existente"></script>
+
    Para editar el contenido, ver herramientas/panel-docente en el
    repositorio PROYECTO-LEARNING.
    ============================================================ */
@@ -30,6 +34,7 @@
 
   var DATA = window.PANEL_DOCENTE;
   var SOLO_EN = document.currentScript && document.currentScript.getAttribute("data-solo-en");
+  var JUNTO_A = document.currentScript && document.currentScript.getAttribute("data-junto-a");
   if(!DATA || !window.crypto || !window.crypto.subtle) return;
 
   // La contraseña se recuerda solo mientras la pestaña siga abierta,
@@ -66,6 +71,7 @@
     ".pd-open{position:fixed;left:12px;bottom:12px;z-index:2147483000;font:600 12px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;letter-spacing:.04em;color:#e8e8ee;background:rgba(20,20,28,.82);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:8px 13px;cursor:pointer;backdrop-filter:blur(4px);opacity:.75;transition:opacity .2s}",
     ".pd-open:hover,.pd-open:focus-visible{opacity:1}",
     ".pd-open[hidden]{display:none}",
+    ".pd-open.inline{position:static;display:block;margin:10px auto 0;opacity:1;background:#fff;color:#1d1d24;border-color:#c9c4b6;backdrop-filter:none}",
     ".pd-open:focus-visible,.pd-btn:focus-visible,.pd-tab:focus-visible,.pd-x:focus-visible,input:focus-visible{outline:2px solid #ffc93f;outline-offset:2px}",
     ".pd-ov{position:fixed;inset:0;z-index:2147483001;background:rgba(5,5,10,.72);display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}",
     ".pd-ov[hidden]{display:none}",
@@ -340,7 +346,15 @@
   }
 
   function mount(){
-    document.body.appendChild(host);
+    // Con data-junto-a="#id", el botón va dentro de la página, justo
+    // después de ese elemento, en vez de flotar en una esquina.
+    var anchor = JUNTO_A && document.querySelector(JUNTO_A);
+    if(anchor){
+      openBtn.classList.add("inline");
+      anchor.parentNode.insertBefore(host, anchor.nextSibling);
+    } else {
+      document.body.appendChild(host);
+    }
     if(SOLO_EN){
       syncVisibility();
       new MutationObserver(syncVisibility).observe(document.body,
