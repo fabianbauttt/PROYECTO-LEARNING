@@ -17,6 +17,10 @@
    Si el juego tiene todas sus pantallas en una sola página, se indica
    cuál es la de inicio y el botón solo se ve mientras esté visible:
      <script src="panel-docente.js" data-solo-en="#pantalla-inicio"></script>
+   Sirve cualquier selector CSS, también uno que solo exista en la
+   pantalla de inicio (p. ej. "#btn-start, #btn-continue") en juegos
+   que dibujan cada pantalla de nuevo. Agregando #docente al final de
+   la dirección del juego, el botón se ve en cualquier pantalla.
 
    Para editar el contenido, ver herramientas/panel-docente en el
    repositorio PROYECTO-LEARNING.
@@ -327,8 +331,12 @@
     }
     return true;
   }
+  // Con #docente al final de la dirección el botón se ve en cualquier
+  // pantalla: útil en juegos que retoman la partida guardada y no
+  // vuelven a mostrar la pantalla de inicio.
+  function forced(){ return /^#docente$/i.test(location.hash); }
   function syncVisibility(){
-    openBtn.hidden = !isShown(document.querySelector(SOLO_EN));
+    openBtn.hidden = !forced() && !isShown(document.querySelector(SOLO_EN));
   }
 
   function mount(){
@@ -336,11 +344,12 @@
     if(SOLO_EN){
       syncVisibility();
       new MutationObserver(syncVisibility).observe(document.body,
-        { attributes:true, attributeFilter:["class","style","hidden"], subtree:true });
+        { attributes:true, attributeFilter:["class","style","hidden"], childList:true, subtree:true });
       // Las animaciones de entrada y salida cambian la opacidad sin tocar
       // atributos: se vuelve a comprobar cuando terminan.
       document.addEventListener("animationend", syncVisibility, true);
       document.addEventListener("transitionend", syncVisibility, true);
+      window.addEventListener("hashchange", syncVisibility);
     }
   }
   if(document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
