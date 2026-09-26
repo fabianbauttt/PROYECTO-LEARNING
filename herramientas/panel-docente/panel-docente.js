@@ -22,6 +22,11 @@
    que dibujan cada pantalla de nuevo. Agregando #docente al final de
    la dirección del juego, el botón se ve en cualquier pantalla.
 
+   Si la pantalla de inicio sigue visible de fondo mientras se juega
+   (módulos que se abren encima), se indican esas capas y el botón se
+   oculta mientras alguna esté visible:
+     <script src="panel-docente.js" data-oculto-con="#capa-1.abierta, #capa-2.abierta"></script>
+
    Para poner el botón dentro de la página (por ejemplo, junto a otro
    botón para profes) en vez de flotando en una esquina:
      <script src="panel-docente.js" data-junto-a="#boton-existente"></script>
@@ -35,6 +40,7 @@
   var DATA = window.PANEL_DOCENTE;
   var SOLO_EN = document.currentScript && document.currentScript.getAttribute("data-solo-en");
   var JUNTO_A = document.currentScript && document.currentScript.getAttribute("data-junto-a");
+  var OCULTO_CON = document.currentScript && document.currentScript.getAttribute("data-oculto-con");
   if(!DATA || !window.crypto || !window.crypto.subtle) return;
 
   // La contraseña se recuerda solo mientras la pestaña siga abierta,
@@ -342,7 +348,11 @@
   // vuelven a mostrar la pantalla de inicio.
   function forced(){ return /^#docente$/i.test(location.hash); }
   function syncVisibility(){
-    openBtn.hidden = !forced() && !isShown(document.querySelector(SOLO_EN));
+    var show = !SOLO_EN || isShown(document.querySelector(SOLO_EN));
+    if(show && OCULTO_CON){
+      show = !Array.prototype.some.call(document.querySelectorAll(OCULTO_CON), isShown);
+    }
+    openBtn.hidden = !forced() && !show;
   }
 
   function mount(){
@@ -355,7 +365,7 @@
     } else {
       document.body.appendChild(host);
     }
-    if(SOLO_EN){
+    if(SOLO_EN || OCULTO_CON){
       syncVisibility();
       new MutationObserver(syncVisibility).observe(document.body,
         { attributes:true, attributeFilter:["class","style","hidden"], childList:true, subtree:true });
