@@ -1,0 +1,8 @@
+{
+  "name": "pruebas-proyecto-learning",
+  "private": true,
+  "description": "Partidas automáticas de prueba de los juegos de PROYECTO LEARNING",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}
