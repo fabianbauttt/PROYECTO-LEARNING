@@ -1,0 +1,12 @@
+# Revisión automática de este repositorio (ver revisar-juego.yml).
+name: Revisión
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  revisar:
+    uses: ./.github/workflows/revisar-juego.yml

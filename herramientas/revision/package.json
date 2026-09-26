@@ -1,0 +1,8 @@
+{
+  "name": "revision-proyecto-learning",
+  "private": true,
+  "description": "Revisión automática de los juegos de PROYECTO LEARNING",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}
