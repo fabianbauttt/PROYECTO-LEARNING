@@ -14,6 +14,10 @@
      <script src="panel-docente-datos.js"></script>
      <script src="panel-docente.js"></script>
 
+   Si el juego tiene todas sus pantallas en una sola página, se indica
+   cuál es la de inicio y el botón solo se ve mientras esté visible:
+     <script src="panel-docente.js" data-solo-en="#pantalla-inicio"></script>
+
    Para editar el contenido, ver herramientas/panel-docente en el
    repositorio PROYECTO-LEARNING.
    ============================================================ */
@@ -21,6 +25,7 @@
   "use strict";
 
   var DATA = window.PANEL_DOCENTE;
+  var SOLO_EN = document.currentScript && document.currentScript.getAttribute("data-solo-en");
   if(!DATA || !window.crypto || !window.crypto.subtle) return;
 
   // La contraseña se recuerda solo mientras la pestaña siga abierta,
@@ -56,6 +61,7 @@
     "*{box-sizing:border-box}",
     ".pd-open{position:fixed;left:12px;bottom:12px;z-index:2147483000;font:600 12px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;letter-spacing:.04em;color:#e8e8ee;background:rgba(20,20,28,.82);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:8px 13px;cursor:pointer;backdrop-filter:blur(4px);opacity:.75;transition:opacity .2s}",
     ".pd-open:hover,.pd-open:focus-visible{opacity:1}",
+    ".pd-open[hidden]{display:none}",
     ".pd-open:focus-visible,.pd-btn:focus-visible,.pd-tab:focus-visible,.pd-x:focus-visible,input:focus-visible{outline:2px solid #ffc93f;outline-offset:2px}",
     ".pd-ov{position:fixed;inset:0;z-index:2147483001;background:rgba(5,5,10,.72);display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow-y:auto}",
     ".pd-ov[hidden]{display:none}",
@@ -309,6 +315,20 @@
   printStyle.textContent = "@media print{#panel-docente{display:none!important}}";
   document.head.appendChild(printStyle);
 
-  function mount(){ document.body.appendChild(host); }
+  // Con data-solo-en, el botón se oculta cuando la pantalla de inicio
+  // deja de verse (el panel abierto no se cierra).
+  function syncVisibility(){
+    var el = document.querySelector(SOLO_EN);
+    openBtn.hidden = !(el && el.getClientRects().length);
+  }
+
+  function mount(){
+    document.body.appendChild(host);
+    if(SOLO_EN){
+      syncVisibility();
+      new MutationObserver(syncVisibility).observe(document.body,
+        { attributes:true, attributeFilter:["class","style","hidden"], subtree:true });
+    }
+  }
   if(document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
 })();
