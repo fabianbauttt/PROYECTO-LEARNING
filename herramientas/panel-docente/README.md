@@ -23,6 +23,12 @@ Si el juego tiene todas sus pantallas en una sola página, se agrega `data-solo-
 
 Algunos juegos retoman la partida guardada y no vuelven a mostrar la pantalla de inicio. En ese caso, agregando `#docente` al final de la dirección (por ejemplo, `https://fabianbauttt.github.io/dos-mundos/#docente`) el botón aparece en cualquier pantalla. Igual pide la contraseña.
 
+Si el juego ya tiene un lugar para el docente en su pantalla de inicio, el botón puede ir dentro de la página, justo después de ese elemento, en vez de flotar en una esquina:
+
+```html
+<script src="panel-docente.js" data-junto-a="#h-teacher"></script>
+```
+
 ## Editar el material de un juego
 
 Se necesita [Node.js](https://nodejs.org) 18 o superior.
