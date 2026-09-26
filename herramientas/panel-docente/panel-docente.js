@@ -27,6 +27,10 @@
   // para no pedirla cada vez que se vuelve a abrir el panel.
   var SESSION_KEY = "panel-docente-clave";
 
+  // A quién escribir para pedir la contraseña (se muestra a quien abre
+  // el panel sin tenerla).
+  var CONTACTO = "fabianbaut@gmail.com";
+
   function b64ToBytes(b64){
     var bin = atob(b64), out = new Uint8Array(bin.length);
     for(var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
@@ -66,6 +70,9 @@
     ".pd-btn{font:600 14px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding:11px 16px;border-radius:8px;border:1px solid #1d1d24;background:#1d1d24;color:#fff;cursor:pointer}",
     ".pd-btn.alt{background:#fff;color:#1d1d24}",
     ".pd-err{color:#b3261e;min-height:1.6em;margin:8px 0 0;font-size:14px}",
+    ".pd-contact{margin:14px 0 0;padding-top:14px;border-top:1px solid #e4e1d8;font-size:14px;color:#5b5a63}",
+    ".pd-contact a{color:#1d1d24;font-weight:600;overflow-wrap:anywhere}",
+    ".pd-contact a:focus-visible{outline:2px solid #ffc93f;outline-offset:2px}",
     ".pd-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 24px 0;border-bottom:1px solid #e4e1d8}",
     ".pd-tab{font:600 13px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding:10px 12px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;background:none;color:#5b5a63;cursor:pointer;margin-bottom:-1px}",
     ".pd-tab[aria-selected=true]{background:#fff;color:#1d1d24;border-color:#e4e1d8}",
@@ -126,6 +133,7 @@
           "<form><input type='password' inputmode='numeric' autocomplete='off' aria-label='Contraseña del panel docente' placeholder='Contraseña'>" +
           "<button class='pd-btn' type='submit'>Entrar</button></form>" +
           "<p class='pd-err' role='alert'></p>" +
+          "<p class='pd-contact'>¿Eres profesor o profesora y quieres acceder al Panel docente? Escribe a <a class='pd-mail'></a>.</p>" +
         "</div>" +
         "<div class='pd-content' hidden>" +
           "<div class='pd-tabs' role='tablist'></div>" +
@@ -148,6 +156,11 @@
   var bodyEl = root.querySelector(".pd-body");
   var logoutBtn = root.querySelector(".pd-logout");
 
+  var mail = root.querySelector(".pd-mail");
+  mail.textContent = CONTACTO;
+  mail.href = "mailto:" + CONTACTO + "?subject=" +
+    encodeURIComponent("Acceso al Panel docente: " + (document.title || location.href));
+
   var material = null;
   var lastFocus = null;
 
@@ -166,7 +179,7 @@
     if(e.key === "Escape"){ e.preventDefault(); closePanel(); return; }
     if(e.key === "Tab"){
       var f = Array.prototype.filter.call(
-        overlay.querySelectorAll("button, input, [tabindex='0']"),
+        overlay.querySelectorAll("button, input, a[href], [tabindex='0']"),
         function(el){ return !el.closest("[hidden]") && !el.disabled; });
       if(!f.length) return;
       var i = f.indexOf(root.activeElement);
