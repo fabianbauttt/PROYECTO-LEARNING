@@ -19,10 +19,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Descargar el juego
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Descargar la herramienta de revisión
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: fabianbauttt/PROYECTO-LEARNING
           ref: ${{ inputs.version-herramienta }}
@@ -30,9 +30,9 @@ jobs:
           sparse-checkout: herramientas/revision
 
       - name: Preparar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Instalar el navegador de pruebas
         working-directory: _revision/herramientas/revision
