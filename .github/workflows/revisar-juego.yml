@@ -6,6 +6,11 @@ name: Revisar juego
 
 on:
   workflow_call:
+    inputs:
+      version-herramienta:
+        description: Versión (rama o commit) de PROYECTO-LEARNING de la que se toma la herramienta de revisión.
+        type: string
+        default: main
 
 jobs:
   revisar:
@@ -20,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: fabianbauttt/PROYECTO-LEARNING
+          ref: ${{ inputs.version-herramienta }}
           path: _revision
           sparse-checkout: herramientas/revision
 

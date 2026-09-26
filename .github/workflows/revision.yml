@@ -10,3 +10,7 @@ on:
 jobs:
   revisar:
     uses: ./.github/workflows/revisar-juego.yml
+    with:
+      # Aquí la herramienta vive en este mismo repositorio: se usa la
+      # versión que se está revisando, no la de main.
+      version-herramienta: ${{ github.event.pull_request.head.sha || github.sha }}
