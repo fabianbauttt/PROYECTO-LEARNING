@@ -17,7 +17,7 @@ Agrega un objeto al arreglo `GAMES` dentro del `<script>` de `index.html`:
 
 ```js
 {
-  id: 'FIL-006',                 // prefijo según la categoría: FIL, CS, ESC u OTR
+  id: 'FIL-007',                 // prefijo según la categoría: FIL, CS, ESC u OTR
   title: 'Nombre del juego',
   description: 'Descripción breve que aparece en la tarjeta.',
   category: 'filosofia',         // filosofia | sociales | escape | otros
@@ -26,8 +26,17 @@ Agrega un objeto al arreglo `GAMES` dentro del `<script>` de `index.html`:
   estimatedTime: '30 min',
   difficulty: 'Intermedia',
   warning: 'Advertencia que se muestra en el expediente.',
+  addedAt: '2026-10-15',         // opcional: fecha en que lo agregas (AAAA-MM-DD)
   isCompleted: false
 },
 ```
 
-La tarjeta, su miniatura y el contador de expedientes se generan automáticamente.
+La tarjeta, su miniatura y el contador de expedientes se generan automáticamente, y el juego aparece en el buscador.
+
+### Etiqueta «Nuevo»
+
+Si el juego tiene `addedAt`, su tarjeta y su expediente muestran la etiqueta **Nuevo** durante 30 días desde esa fecha; después desaparece sola. Para cambiar la duración, edita `NEW_BADGE_DAYS` en `index.html`.
+
+### Buscador
+
+Busca en el título, la descripción, la categoría y el código de cada juego. No distingue mayúsculas ni tildes, se combina con el filtro de categoría activo y, si escribes varias palabras, muestra solo los juegos que las contienen todas.
