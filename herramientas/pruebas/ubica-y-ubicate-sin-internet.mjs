@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b=await chromium.launch({executablePath: process.env.CHROMIUM_PATH});
+const ctx=await b.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true}); const p=await ctx.newPage();
+await p.route(/fonts\./,r=>r.abort());
+await p.goto('http://localhost:8766/ubica-y-ubicate/index.html'); 
+const reg=await p.evaluate(async()=>{ if(!('serviceWorker' in navigator)) return 'sin soporte'; const r=await navigator.serviceWorker.ready; await new Promise(r=>setTimeout(r,1500)); const keys=await caches.keys(); const c=await caches.open(keys[0]); return {activo:!!r.active, cache:keys, archivos:(await c.keys()).length}; });
+console.log('service worker:', JSON.stringify(reg));
+await ctx.setOffline(true);
+await p.reload({waitUntil:'load'}).catch(e=>console.log('reload error', e.message));
+await p.waitForTimeout(1200);
+console.log('sin conexión → título:', await p.title(), '| mapa cargado:', await p.evaluate(()=>{const i=[...document.images].filter(i=>i.src.includes('mapa')); return i.length? i.every(x=>x.complete&&x.naturalWidth>0) : getComputedStyle(document.body).backgroundImage!=='none' || !!document.querySelector('#homemapbox, #layer')}), '| juego iniciado:', await p.evaluate(()=>typeof G!=='undefined' || typeof startGame==='function'));
+await p.screenshot({path:'uyu-offline.png'}); await b.close();
