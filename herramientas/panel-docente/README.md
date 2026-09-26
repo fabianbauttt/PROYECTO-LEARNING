@@ -15,6 +15,14 @@ En la pantalla de inicio de cada juego, antes de `</body>`:
 <script src="panel-docente.js"></script>
 ```
 
+Si el juego tiene todas sus pantallas en una sola página, se agrega `data-solo-en` con un selector de la pantalla de inicio, para que el botón solo se vea ahí:
+
+```html
+<script src="panel-docente.js" data-solo-en="#screen-intro"></script>
+```
+
+Algunos juegos retoman la partida guardada y no vuelven a mostrar la pantalla de inicio. En ese caso, agregando `#docente` al final de la dirección (por ejemplo, `https://fabianbauttt.github.io/dos-mundos/#docente`) el botón aparece en cualquier pantalla. Igual pide la contraseña.
+
 ## Editar el material de un juego
 
 Se necesita [Node.js](https://nodejs.org) 18 o superior.
