@@ -244,6 +244,58 @@
   .gamehub__filter-btn.is-active::before{ opacity: 0; content: ""; }
 
   /* ============================================================
+     BLOCK: gamehub__search
+     ============================================================ */
+  .gamehub__search{
+    position: relative;
+    max-width: 440px;
+    margin-bottom: 14px;
+  }
+
+  .gamehub__search-prompt{
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .gamehub__search-input{
+    width: 100%;
+    padding: 10px 14px 10px 32px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: .03em;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .gamehub__search-input::placeholder{ color: var(--text-dim); }
+
+  .gamehub__search-input:hover{ border-color: var(--border-strong); }
+
+  .gamehub__search-input:focus-visible{
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-dim);
+  }
+
+  .visually-hidden{
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ============================================================
      BLOCK: gamehub__grid
      ============================================================ */
   .gamehub__grid{
@@ -355,6 +407,26 @@
     font-size: 10.5px;
     letter-spacing: .12em;
     color: var(--text-dim);
+  }
+
+  .gamehub-card__ids{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* --- "Nuevo" badge: shared by the card and the dossier --- */
+  .gamehub-card__new,
+  .dossier__new{
+    font-size: 10px;
+    letter-spacing: .1em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 3px 7px;
+    border-radius: 2px;
+    box-shadow: 0 0 12px var(--accent-dim);
   }
 
   .gamehub-card__tag{
@@ -679,6 +751,8 @@
     .gamehub__header{ align-items: flex-start; }
     .gamehub__status{ order: -1; }
     .gamehub__grid{ grid-template-columns: 1fr; }
+    /* 16px avoids the automatic zoom iOS applies when focusing smaller inputs */
+    .gamehub__search-input{ font-size: 16px; }
   }
 
   @media (max-width: 400px){
@@ -717,6 +791,12 @@
       </div>
     </header>
 
+    <div class="gamehub__search" role="search">
+      <label class="visually-hidden" for="gamehub-search">Buscar expediente por nombre, tema o palabra clave</label>
+      <span class="gamehub__search-prompt" aria-hidden="true">&gt;</span>
+      <input class="gamehub__search-input" id="gamehub-search" type="search" placeholder="buscar expediente…" autocomplete="off" spellcheck="false">
+    </div>
+
     <nav class="gamehub__filters" aria-label="Filtrar expedientes por categoría">
       <button class="gamehub__filter-btn is-active" data-filter="todos" type="button">Todos</button>
       <button class="gamehub__filter-btn" data-filter="filosofia" type="button">Filosofía</button>
@@ -742,6 +822,7 @@
       <header class="dossier__header">
         <span class="dossier__id" id="dossier-id"></span>
         <span class="dossier__tag" id="dossier-tag"></span>
+        <span class="dossier__new" id="dossier-new" hidden>Nuevo</span>
         <span class="dossier__status" id="dossier-status" hidden>✓ Completado</span>
       </header>
       <div class="dossier__icon" id="dossier-icon"></div>
@@ -861,6 +942,7 @@
     estimatedTime: 'Varias sesiones',
     difficulty: 'Básica',
     warning: 'El progreso se guarda en este navegador; en computadores compartidos, bórralo al terminar.',
+    addedAt: '2026-09-26',
     isCompleted: false
   },
       {
@@ -873,6 +955,7 @@
     estimatedTime: '30 min',
     difficulty: 'Intermedia',
     warning: 'Tus elecciones construyen un perfil estético que tendrás que defender.',
+    addedAt: '2026-09-26',
     isCompleted: false
   },
       {
@@ -885,6 +968,7 @@
     estimatedTime: '45 min',
     difficulty: 'Intermedia',
     warning: 'La cerradura final se abre escribiendo tus propios principios éticos.',
+    addedAt: '2026-09-26',
     isCompleted: false
   },
   ];
@@ -933,22 +1017,44 @@
   const emptyMsg = document.getElementById('gamehub-empty');
   const countEl = document.getElementById('gamehub-count');
 
+  // Un juego con addedAt ('AAAA-MM-DD') lleva la etiqueta "Nuevo" durante estos días.
+  const NEW_BADGE_DAYS = 30;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  function isNew(game){
+    if (!game.addedAt) return false;
+    const added = new Date(game.addedAt + 'T00:00:00');
+    if (isNaN(added)) return false;
+    const age = Date.now() - added.getTime();
+    return age >= 0 && age < NEW_BADGE_DAYS * DAY_MS;
+  }
+
+  // Minúsculas y sin tildes, para que "filosofia" encuentre "Filosofía".
+  function normalizeText(text){
+    return String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+
   function renderCard(game){
     const meta = CATEGORY_META[game.category];
+    const fresh = isNew(game);
 
     const card = document.createElement('article');
     card.className = 'gamehub-card ' + meta.cardModifier + (game.isCompleted ? ' gamehub-card--completed' : '');
     card.dataset.category = game.category;
     card.dataset.id = game.id;
+    card.dataset.search = normalizeText([game.title, game.description, meta.label, game.id].join(' '));
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-haspopup', 'dialog');
-    card.setAttribute('aria-label', 'Ver expediente: ' + game.title);
+    card.setAttribute('aria-label', 'Ver expediente: ' + game.title + (fresh ? ' (nuevo)' : ''));
 
     card.innerHTML = `
       <div class="gamehub-card__scan" aria-hidden="true"></div>
       <header class="gamehub-card__header">
-        <span class="gamehub-card__id">${game.id}</span>
+        <span class="gamehub-card__ids">
+          <span class="gamehub-card__id">${game.id}</span>
+          ${fresh ? '<span class="gamehub-card__new">Nuevo</span>' : ''}
+        </span>
         <span class="gamehub-card__tag">${meta.label}</span>
       </header>
       <div class="gamehub-card__media" role="img" aria-label="Miniatura de ${game.title}" style="background-image:url('${buildThumbnail(game.category, game.icon)}')">
@@ -991,7 +1097,16 @@
     { opacity: 0, transform: 'translateY(16px) scale(0.95)' }
   ];
 
-  function applyFilter(category){
+  const searchInput = document.getElementById('gamehub-search');
+  const EMPTY_CATEGORY_TEXT = emptyMsg.textContent;
+
+  let activeCategory = 'todos';
+  let searchTerms = [];
+
+  // replayVisible: al cambiar de categoría se re-animan todas las tarjetas visibles
+  // (efecto escalonado). Al escribir en el buscador solo se animan las que aparecen
+  // o desaparecen, para que la grilla no parpadee con cada tecla.
+  function applyFilter(replayVisible){
     const cards = grid.querySelectorAll('.gamehub-card');
     let visibleCount = 0;
     let staggerIndex = 0;
@@ -1000,15 +1115,20 @@
       // Si esta tarjeta ya tenía una animación en curso (p. ej. por un clic anterior
       // muy reciente), se cancela antes de iniciar la nueva: así nunca se ejecuta un
       // "onfinish" obsoleto que oculte o descoloque una tarjeta que ya cambió de estado.
+      // Al cancelar, la tarjeta vuelve a su estilo base: visible salvo que tenga display:none.
       if (card._filterAnimation){
         card._filterAnimation.cancel();
         card._filterAnimation = null;
       }
+      const isShown = card.style.display !== 'none';
 
-      const matches = category === 'todos' || card.dataset.category === category;
+      const matches =
+        (activeCategory === 'todos' || card.dataset.category === activeCategory) &&
+        searchTerms.every(term => card.dataset.search.includes(term));
 
       if (matches){
         visibleCount++;
+        if (isShown && !replayVisible) return;
         staggerIndex++;
         const delay = Math.min(staggerIndex * STAGGER_MS, STAGGER_MAX_MS);
 
@@ -1029,6 +1149,7 @@
 
         card._filterAnimation = anim;
       } else {
+        if (!isShown) return;
         const anim = card.animate(HIDE_KEYFRAMES, {
           duration: FILTER_DURATION,
           easing: 'ease',
@@ -1047,6 +1168,10 @@
     });
 
     countEl.textContent = visibleCount;
+    emptyMsg.textContent = searchTerms.length
+      ? 'Ningún expediente coincide con «' + searchInput.value.trim() + '»' +
+        (activeCategory === 'todos' ? '.' : ' en esta categoría.')
+      : EMPTY_CATEGORY_TEXT;
     emptyMsg.hidden = visibleCount !== 0;
   }
 
@@ -1054,8 +1179,20 @@
     btn.addEventListener('click', () => {
       filterButtons.forEach(b => b.classList.remove('is-active'));
       btn.classList.add('is-active');
-      applyFilter(btn.dataset.filter);
+      activeCategory = btn.dataset.filter;
+      applyFilter(true);
     });
+  });
+
+  // En palabras de 5 letras o más se ignora la terminación (-a, -o, -e, -as, -os, -es),
+  // para que "ética" encuentre "bioético" y "escapes" encuentre "escape".
+  function searchStem(term){
+    return term.length >= 5 ? term.replace(/[aeo]s?$/, '') : term;
+  }
+
+  searchInput.addEventListener('input', () => {
+    searchTerms = normalizeText(searchInput.value).split(/\s+/).filter(Boolean).map(searchStem);
+    applyFilter(false);
   });
 
   /* ============================================================
@@ -1066,6 +1203,7 @@
   const dossierId = document.getElementById('dossier-id');
   const dossierTag = document.getElementById('dossier-tag');
   const dossierStatus = document.getElementById('dossier-status');
+  const dossierNew = document.getElementById('dossier-new');
   const dossierIcon = document.getElementById('dossier-icon');
   const dossierTitle = document.getElementById('dossier-title');
   const dossierDesc = document.getElementById('dossier-desc');
@@ -1103,6 +1241,7 @@
     dossierId.textContent = game.id;
     dossierTag.textContent = meta.label;
     dossierStatus.hidden = !game.isCompleted;
+    dossierNew.hidden = !isNew(game);
     dossierIcon.textContent = game.icon;
     dossierTitle.textContent = game.title;
     dossierDesc.textContent = game.description;
